@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `argon2` mod in crate `crypto`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, argon2">
+
+    <title>crypto::argon2 - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>crypto</a></p><script>window.sidebarCurrent = {name: 'argon2', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content mod">
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>crypto</a>::<wbr><a class='mod' href=''>argon2</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-1092' class='srclink' href='../../src/crypto/src/argon2.rs.html#7-1620' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>Machinery to compute the <a href="https://github.com/P-H-C/phc-winner-/blob/master/-specs.pdf">Argon2</a>
+password hashing algorithm. </p>
+
+<p>The <code>argon2</code> module computes the <a href="https://github.com/P-H-C/phc-winner-/blob/master/-specs.pdf">Argon2</a> 
+password hashing algorithm through a simple method, <code>crypto::argon2::argon2()</code>. </p>
+
+<p>This module implements Argon2, it was written by @bryant originally in <a href="https://github.com/bryant/argon2rs">argon2rs</a>. 
+The API for this module follows a similar pattern to <a href="../scrypt/index.html"><code>crypto::scrypt</code></a>. </p>
+
+<h1 id='provided-quick-access-methods' class='section-header'><a href='#provided-quick-access-methods'>Provided quick access methods</a></h1>
+<ul>
+<li><a href="./fn.a2hash.html"><code>a2hash</code></a> -- Takes a password, salt, and <code>Algorithm</code> object and produces a hash.</li>
+<li><a href="./fn.simple2d.html"><code>simple2d</code></a> -- Accepts a password, salt, variant and uses default parameters.</li>
+<li><a href="./fn.simple2i.html"><code>simple2i</code></a> -- Accepts a password and salt, uses default parameters.</li>
+</ul>
+
+<h2 id='examples' class='section-header'><a href='#examples'>Examples</a></h2>
+<p>Simple Argon2d hash: </p>
+
+<p>Simple 16-byte Argon2d hash with 8 lanes (threads) and 1MB of memory:</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>argon2</span>::{ <span class='ident'>a2hash</span>, <span class='ident'>Algorithm</span> };
+<span class='kw'>use</span> <span class='ident'>rustc_serialize</span>::<span class='ident'>hex</span>::<span class='ident'>ToHex</span>; <span class='comment'>// for nice hashes</span>
+
+<span class='comment'>// Expected hash result</span>
+<span class='kw'>const</span> <span class='ident'>HASH</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> <span class='op'>=</span> <span class='string'>&quot;a36e28d37464eadfafd505205b3f3100&quot;</span>;
+ 
+<span class='comment'>// Set 8 lanes, and 1MB of memory</span>
+<span class='kw'>let</span> <span class='ident'>a2</span> <span class='op'>=</span> <span class='ident'>Algorithm</span>::<span class='ident'>argon2d</span>()
+                .<span class='ident'>hash_length</span>(<span class='number'>16</span>)        <span class='comment'>// Set the length smaller for docs :)</span>
+                .<span class='ident'>lanes</span>(<span class='number'>8</span>)               <span class='comment'>// 8 lanes </span>
+                .<span class='ident'>memory_size</span>(<span class='number'>1</span> <span class='op'>*</span> <span class='number'>1024</span>); <span class='comment'>// 1 * 1024 == 1MB</span>
+ 
+<span class='comment'>// Run Argon2 with password: &quot;football&quot; and salt: &quot;super salt&quot;</span>
+<span class='kw'>let</span> <span class='ident'>hash</span> <span class='op'>=</span> <span class='ident'>a2hash</span>(<span class='string'>&quot;football&quot;</span>, <span class='string'>&quot;super salt&quot;</span>, <span class='kw-2'>&amp;</span><span class='ident'>a2</span>).<span class='ident'>unwrap</span>();
+ 
+<span class='comment'>// Make sure they&#39;re equal</span>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>hash</span>.<span class='ident'>to_hex</span>(), <span class='ident'>HASH</span>);</pre>
+
+<p>Large memory-hash using Argon2i with 12 lanes, 12 block passes and 1GB of memory</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='comment'>// WARNING: This is very slow on older or busy computers. It is also slow in debug mode.</span>
+<span class='kw'>use</span> <span class='ident'>rustc_serialize</span>::<span class='ident'>hex</span>::<span class='ident'>ToHex</span>; <span class='comment'>// for nice hashes</span>
+ 
+<span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>argon2</span>::{ <span class='ident'>Algorithm</span>, <span class='ident'>a2hash</span> };
+
+<span class='comment'>// Expected hash</span>
+<span class='kw'>const</span> <span class='ident'>HASH</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> <span class='op'>=</span> <span class='macro'>concat</span><span class='macro'>!</span>(<span class='string'>&quot;024d11660b08a1c38dbb2c048f48cbda&quot;</span>,
+                                   <span class='string'>&quot;c76a22547367a0f17fc32a63232c6dd7&quot;</span>);
+ 
+<span class='comment'>// Set 12 lanes, 5 passes, and 1GB memory</span>
+<span class='kw'>let</span> <span class='ident'>params</span> <span class='op'>=</span> <span class='ident'>Algorithm</span>::<span class='ident'>argon2d</span>()
+                .<span class='ident'>hash_length</span>(<span class='number'>32</span>)                 <span class='comment'>// 32 bytes of hash</span>
+                .<span class='ident'>lanes</span>(<span class='number'>12</span>)                       <span class='comment'>// 12 threads  </span>
+                .<span class='ident'>passes</span>(<span class='number'>5</span>)                       <span class='comment'>// 5 passes</span>
+                .<span class='ident'>memory_size</span>(<span class='number'>1</span> <span class='op'>*</span> <span class='number'>1024</span> <span class='op'>*</span> <span class='number'>1024</span>);   <span class='comment'>// 1 * 1024 * 1024 == 1GB</span>
+ 
+<span class='comment'>// Run Argon2 with password: &quot;master&quot; and salt: &quot;super salt&quot;</span>
+<span class='kw'>let</span> <span class='ident'>hash</span> <span class='op'>=</span> <span class='ident'>a2hash</span>(<span class='string'>&quot;master&quot;</span>, <span class='string'>&quot;super salt&quot;</span>, <span class='kw-2'>&amp;</span><span class='ident'>params</span>).<span class='ident'>unwrap</span>();
+ 
+<span class='comment'>// Make sure they&#39;re equal</span>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>hash</span>.<span class='ident'>to_hex</span>(), <span class='ident'>HASH</span>);</pre>
+
+<p>Utilizing <em>all</em> of the parameters!</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='kw'>use</span> <span class='ident'>rustc_serialize</span>::<span class='ident'>hex</span>::<span class='ident'>ToHex</span>; <span class='comment'>// for nice hashes</span>
+ 
+<span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>argon2</span>::{ <span class='ident'>Algorithm</span>, <span class='ident'>a2hash</span> };
+
+<span class='comment'>// Expected hash</span>
+<span class='kw'>const</span> <span class='ident'>HASH</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> <span class='op'>=</span> <span class='macro'>concat</span><span class='macro'>!</span>(<span class='string'>&quot;10c500f940373f979a53832d0726cce4&quot;</span>,
+                                   <span class='string'>&quot;c0817584fdb4d7ede19ee6be77008773&quot;</span>);
+ 
+<span class='comment'>// Set 4 lanes, 4 passes, and 350MB memory</span>
+<span class='kw'>let</span> <span class='ident'>alg</span> <span class='op'>=</span> <span class='ident'>Algorithm</span>::<span class='ident'>argon2d</span>()
+                .<span class='ident'>hash_length</span>(<span class='number'>32</span>)                <span class='comment'>// 32 bytes of hash</span>
+                .<span class='ident'>lanes</span>(<span class='number'>4</span>)                       <span class='comment'>// 4 threads  </span>
+                .<span class='ident'>passes</span>(<span class='number'>4</span>)                      <span class='comment'>// 4 passes</span>
+                .<span class='ident'>memory_size</span>(<span class='number'>350</span> <span class='op'>*</span> <span class='number'>1024</span>);       <span class='comment'>// 350 * 1024 == 350MB</span>
+ 
+<span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>buff</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0u8</span>; <span class='number'>32</span>]; <span class='comment'>// 32 bytes</span>
+<span class='ident'>alg</span>.<span class='ident'>build</span>().<span class='ident'>unwrap</span>()
+    .<span class='ident'>password</span>(<span class='string'>&quot;welcome&quot;</span>)                    <span class='comment'>// Password</span>
+    .<span class='ident'>salt</span>(<span class='string'>&quot;More Salt!&quot;</span>)                     <span class='comment'>// Salt</span>
+    .<span class='ident'>assoc_data</span>(<span class='kw-2'>&amp;</span>[<span class='number'>34</span>, <span class='number'>32</span>, <span class='number'>19</span>, <span class='number'>09</span>, <span class='number'>0xff</span>])    <span class='comment'>// Associated data, `x`</span>
+    .<span class='ident'>secret</span>(<span class='kw-2'>&amp;</span>[<span class='number'>03</span>, <span class='number'>43</span>, <span class='number'>32</span>])                  <span class='comment'>// Secret, `k`! don&#39;t tell anyone!</span>
+    .<span class='ident'>hash_inplace</span>(<span class='ident'>buff</span>.<span class='ident'>as_mut_slice</span>())      <span class='comment'>// hash into the buffer we alloc&#39;d before</span>
+    .<span class='ident'>unwrap</span>();                              <span class='comment'>// Alternately, could have used .hash() which </span>
+                                            <span class='comment'>//      returns a `Result&lt;Vec&lt;u8&gt;, ParamErr&gt;`</span>
+ 
+<span class='comment'>// Make sure they&#39;re equal</span>
+<span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>buff</span>.<span class='ident'>to_hex</span>(), <span class='ident'>HASH</span>);</pre>
+
+<h1 id='builders-saving-state-for-repeated-hashing-patterns' class='section-header'><a href='#builders-saving-state-for-repeated-hashing-patterns'>Builders: Saving State for repeated hashing patterns</a></h1>
+<p>The <code>Algorithm</code> struct allows for consistent repeated hashes by maintaining a copy of the builder<br>
+while performing multiple hashes. The instances are thread-safe.</p>
+
+<p>The <code>HashBldr</code> struct uses references to remove unecessary allocations, but does implement <code>Clone</code> if needed. </p>
+
+<h2 id='reuse-in-parallel-example' class='section-header'><a href='#reuse-in-parallel-example'>Reuse in Parallel Example</a></h2>
+<p>The following example shows reuse and checking in a multi-threaded environment.</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='kw'>use</span> <span class='ident'>rustc_serialize</span>::<span class='ident'>hex</span>::<span class='ident'>ToHex</span>; <span class='comment'>// for nice hashes</span>
+ 
+<span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>argon2</span>::{ <span class='ident'>Algorithm</span> };
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>thread</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>sync</span>::{ <span class='ident'>Arc</span>, <span class='ident'>Mutex</span> };
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>time</span>::<span class='ident'>Duration</span>;
+ 
+<span class='comment'>// Passwords!</span>
+<span class='kw'>const</span> <span class='ident'>PASSWORDS</span>: [<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span>; <span class='number'>3</span>] <span class='op'>=</span> [<span class='string'>&quot;master&quot;</span>, <span class='string'>&quot;princess&quot;</span>, <span class='string'>&quot;12345678&quot;</span>];
+
+<span class='comment'>// Expected hashes!</span>
+<span class='kw'>const</span> <span class='ident'>HASHES</span>: [<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span>; <span class='number'>3</span>] <span class='op'>=</span> [<span class='macro'>concat</span><span class='macro'>!</span>(<span class='string'>&quot;11b4c46b4fb6f00536c4a86b0b4c338a&quot;</span>,
+                                           <span class='string'>&quot;2ed30f32b35f8572f799df9721dae7cb&quot;</span>),
+                                   <span class='macro'>concat</span><span class='macro'>!</span>(<span class='string'>&quot;265ca612224064703a0def52621b6a0c&quot;</span>,
+                                           <span class='string'>&quot;2729907f406af6b44ee1dc08c43f4c28&quot;</span>),
+                                   <span class='macro'>concat</span><span class='macro'>!</span>(<span class='string'>&quot;e36a674caa556f0e70c9790d652cb6d7&quot;</span>,
+                                           <span class='string'>&quot;f8ce83916d74b1448194d36e44ea8fff&quot;</span>)];
+ 
+<span class='comment'>// Set 2 lanes, 3 passes, and 100MB memory per algorithm run</span>
+<span class='kw'>let</span> <span class='ident'>alg_params</span> <span class='op'>=</span> <span class='ident'>Arc</span>::<span class='ident'>new</span>(<span class='ident'>Algorithm</span>::<span class='ident'>argon2d</span>()
+                            .<span class='ident'>hash_length</span>(<span class='number'>32</span>)                <span class='comment'>// 32 bytes of hash</span>
+                            .<span class='ident'>lanes</span>(<span class='number'>2</span>)                       <span class='comment'>// 2 threads  </span>
+                            .<span class='ident'>passes</span>(<span class='number'>3</span>)                      <span class='comment'>// 3 passes</span>
+                            .<span class='ident'>memory_size</span>(<span class='number'>100</span> <span class='op'>*</span> <span class='number'>1024</span>));      <span class='comment'>// 100 * 1024 == 100MB</span>
+<span class='kw'>let</span> <span class='ident'>results</span> <span class='op'>=</span> <span class='ident'>Arc</span>::<span class='ident'>new</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='ident'>Mutex</span>::<span class='ident'>new</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0u8</span>; <span class='number'>32</span>]), 
+                            <span class='ident'>Mutex</span>::<span class='ident'>new</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0u8</span>; <span class='number'>32</span>]), 
+                            <span class='ident'>Mutex</span>::<span class='ident'>new</span>(<span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>0u8</span>; <span class='number'>32</span>])]);
+ 
+<span class='comment'>// Compute all of the hashes in parallel</span>
+<span class='kw'>for</span> <span class='ident'>i</span> <span class='kw'>in</span> <span class='number'>0</span>..<span class='ident'>PASSWORDS</span>.<span class='ident'>len</span>() {
+    <span class='kw'>let</span> <span class='ident'>pass</span> <span class='op'>=</span> <span class='ident'>PASSWORDS</span>[<span class='ident'>i</span>]; <span class='comment'>// access it this way to increase the scope of the value for the </span>
+                             <span class='comment'>// thread closure later   </span>
+
+    <span class='comment'>// clone the Arcs</span>
+    <span class='kw'>let</span> <span class='ident'>alg</span> <span class='op'>=</span> <span class='ident'>alg_params</span>.<span class='ident'>clone</span>();
+    <span class='kw'>let</span> <span class='ident'>results</span> <span class='op'>=</span> <span class='ident'>results</span>.<span class='ident'>clone</span>();
+     
+    <span class='ident'>thread</span>::<span class='ident'>spawn</span>(<span class='kw'>move</span> <span class='op'>||</span> {
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>result</span> <span class='op'>=</span> <span class='ident'>results</span>[<span class='ident'>i</span>].<span class='ident'>lock</span>().<span class='ident'>unwrap</span>();
+        <span class='ident'>alg</span>.<span class='ident'>build</span>().<span class='ident'>unwrap</span>()
+            .<span class='ident'>password</span>(<span class='ident'>pass</span>)
+            .<span class='ident'>salt</span>(<span class='string'>&quot;super duper salt&quot;</span>)
+            .<span class='ident'>hash_inplace</span>(<span class='ident'>result</span>.<span class='ident'>as_mut_slice</span>())
+            .<span class='ident'>unwrap</span>();
+    });
+}
+ 
+<span class='comment'>// Go to sleep and wait for them to finish. If this was not enough time, </span>
+<span class='comment'>// the `Mutex::lock()` will force us to wait later</span>
+<span class='ident'>thread</span>::<span class='ident'>sleep</span>(<span class='ident'>Duration</span>::<span class='ident'>from_millis</span>(<span class='number'>50</span>));
+ 
+<span class='comment'>// Now check that the hashes are correct!</span>
+<span class='kw'>for</span> (<span class='ident'>i</span>, <span class='ident'>expected</span>) <span class='kw'>in</span> <span class='ident'>HASHES</span>.<span class='ident'>iter</span>().<span class='ident'>enumerate</span>() {
+    <span class='kw'>let</span> <span class='ident'>result</span> <span class='op'>=</span> <span class='ident'>results</span>[<span class='ident'>i</span>].<span class='ident'>lock</span>().<span class='ident'>unwrap</span>(); <span class='comment'>// lock the result arrays</span>
+    <span class='kw'>let</span> <span class='ident'>hex</span> <span class='op'>=</span> <span class='ident'>result</span>.<span class='ident'>to_hex</span>();
+ 
+    <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;{}: left={} ;; right={}&quot;</span>, <span class='ident'>i</span>, <span class='ident'>hex</span>, <span class='ident'>expected</span>);
+    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>hex</span>, <span class='op'>*</span><span class='ident'>expected</span>);
+}</pre>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.Algorithm.html'
+                                  title='crypto::argon2::Algorithm'>Algorithm</a></td>
+                           <td class='docblock short'>
+                                <p>Builder which creates <code>Hash</code> instances for reuse.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.Argon2.html'
+                                  title='crypto::argon2::Argon2'>Argon2</a></td>
+                           <td class='docblock short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='struct' href='struct.HashBldr.html'
+                                  title='crypto::argon2::HashBldr'>HashBldr</a></td>
+                           <td class='docblock short'>
+                                <p>Build up a single hash (reusable)</p>
+                           </td>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.ParamErr.html'
+                                  title='crypto::argon2::ParamErr'>ParamErr</a></td>
+                           <td class='docblock short'>
+                                <p>Error value used to describe errors in Parameters</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='enum' href='enum.Variant.html'
+                                  title='crypto::argon2::Variant'>Variant</a></td>
+                           <td class='docblock short'>
+                                <p>Denotes which Argon2 algorithm to use</p>
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class='fn' href='fn.a2hash.html'
+                                  title='crypto::argon2::a2hash'>a2hash</a></td>
+                           <td class='docblock short'>
+                                <p>Compute the <a href="https://github.com/P-H-C/phc-winner-/blob/master/-specs.pdf">Argon2</a> hash of a password and salt.
+This is a short-hand method to using the builders. </p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='fn' href='fn.simple2d.html'
+                                  title='crypto::argon2::simple2d'>simple2d</a></td>
+                           <td class='docblock short'>
+                                <p>Computes a hash using <code>Argon2d</code> with a password and salt, and default parameters.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class='fn' href='fn.simple2i.html'
+                                  title='crypto::argon2::simple2i'>simple2i</a></td>
+                           <td class='docblock short'>
+                                <p>Computes a hash using <code>Argon2i</code> with a password and salt, and default parameters.</p>
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "crypto";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>
